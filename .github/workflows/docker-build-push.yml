@@ -23,11 +23,5 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        push: false  # Set to false for debugging
+        push: true  # Push to Docker Hub
         tags: 24041999/file-manager-hub:latest
-        load: true   # Load the image locally
-      
-    - name: Run the image
-      run: |
-        docker run --name debug-container 24041999/file-manager-hub:latest
-        docker logs debug-container
