@@ -199,24 +199,54 @@ function FileList({ path, search }: { path: string; search: string }) {
   );
 }
 
-const FilesPage = () => {
-  const searchParams = useSearchParams();
+function SearchForm({ initialSearch }: { initialSearch: string }) {
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
-  useEffect(() => {
-    const search = searchParams?.get("search") || "";
-    setSearchQuery(search);
-  }, [searchParams]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
-    const path = searchParams?.get("path") || "";
+    const path = new URLSearchParams(window.location.search).get("path") || "";
     router.push(
       `?path=${encodeURIComponent(path)}&search=${encodeURIComponent(searchQuery)}`
     );
   };
 
+  return (
+    <form onSubmit={handleSearch} className="mb-6 flex items-center">
+      <div className="relative w-full">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search files..."
+          className="w-full border border-gray-300 rounded-md py-2 px-4 pl-10 focus:outline-none focus:border-blue-500"
+        />
+        <HiSearch className="absolute left-3 top-3 text-gray-400" />
+      </div>
+      <button
+        type="submit"
+        className="ml-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
+      >
+        Search
+      </button>
+    </form>
+  );
+}
+
+function FileManagerContent() {
+  const searchParams = useSearchParams();
+  const path = searchParams?.get("path") || "";
+  const search = searchParams?.get("search") || "";
+
+  return (
+    <>
+      <SearchForm initialSearch={search} />
+      <FileList path={path} search={search} />
+    </>
+  );
+}
+
+const FilesPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="mx-auto px-6 py-8">
@@ -224,32 +254,8 @@ const FilesPage = () => {
           <h1 className="text-3xl font-semibold text-gray-700 mb-6">
             File Manager Hub
           </h1>
-
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="mb-6 flex items-center">
-            <div className="relative w-full">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search files..."
-                className="w-full border border-gray-300 rounded-md py-2 px-4 pl-10 focus:outline-none focus:border-blue-500"
-              />
-              <HiSearch className="absolute left-3 top-3 text-gray-400" />
-            </div>
-            <button
-              type="submit"
-              className="ml-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
-            >
-              Search
-            </button>
-          </form>
-
           <Suspense fallback={<div>Loading...</div>}>
-            <FileList
-              path={searchParams?.get("path") || ""}
-              search={searchParams?.get("search") || ""}
-            />
+            <FileManagerContent />
           </Suspense>
         </div>
       </div>
