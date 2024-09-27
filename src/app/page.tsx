@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { HiFolder, HiDocument, HiSearch } from "react-icons/hi";
 
@@ -18,37 +18,52 @@ interface FileListResponse {
   currentPath: string;
 }
 
-function useSearchParamsWrapper() {
-  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
-
-  useEffect(() => {
-    setSearchParams(new URLSearchParams(window.location.search));
-  }, []);
-
-  return searchParams;
-}
-
 function FileList({ path, search }: { path: string; search: string }) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [currentPath, setCurrentPath] = useState<string>("");
+  const [folderCount, setFolderCount] = useState<number>(0);
+  const [fileCount, setFileCount] = useState<number>(0);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchFiles = async () => {
-      const res = await fetch(`/api/files?path=${path}&search=${search}`);
+      const res = await fetch(`/api/files?path=${encodeURIComponent(path)}&search=${encodeURIComponent(search)}`);
       const data: FileListResponse = await res.json();
       setFiles(data.files);
       setCurrentPath(data.currentPath);
+      
+      // Count folders and files
+      const folders = data.files.filter(item => item.isDirectory);
+      const filesOnly = data.files.filter(item => !item.isDirectory);
+      setFolderCount(folders.length);
+      setFileCount(filesOnly.length);
     };
 
     fetchFiles();
   }, [path, search]);
 
+  const handleOpen = (filePath: string) => {
+    router.push(`/?path=${encodeURIComponent(filePath)}`);
+  };
+
   return (
     <>
-      {/* Current Path */}
-      <div className="mb-4">
-        <span className="font-medium text-gray-600">Current Path:</span>{" "}
-        <span className="text-gray-800">{currentPath || "/"}</span>
+      {/* Current Path and Counts */}
+      <div className="mb-4 space-y-2">
+        <div>
+          <span className="font-medium text-gray-600">Current Path:</span>{" "}
+          <span className="text-gray-800">{currentPath || "/"}</span>
+        </div>
+        <div className="flex space-x-4">
+          <div>
+            <span className="font-medium text-gray-600">Folders:</span>{" "}
+            <span className="text-gray-800">{folderCount}</span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Files:</span>{" "}
+            <span className="text-gray-800">{fileCount}</span>
+          </div>
+        </div>
       </div>
 
       {/* File List */}
@@ -89,12 +104,12 @@ function FileList({ path, search }: { path: string; search: string }) {
 
               <div className="flex justify-between mt-4">
                 {file.isDirectory ? (
-                  <Link
-                    href={`/?path=${encodeURIComponent(file.path)}`}
+                  <button
+                    onClick={() => handleOpen(file.path)}
                     className="text-blue-500 hover:underline"
                   >
                     Open
-                  </Link>
+                  </button>
                 ) : (
                   <div className="flex space-x-4">
                     <Link
@@ -130,22 +145,20 @@ function FileList({ path, search }: { path: string; search: string }) {
 }
 
 const FilesPage = () => {
-  const searchParams = useSearchParamsWrapper();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
-    if (searchParams) {
-      const search = searchParams.get("search") || "";
-      setSearchQuery(search);
-    }
+    const search = searchParams?.get("search") || "";
+    setSearchQuery(search);
   }, [searchParams]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const path = searchParams?.get("path") || "";
     router.push(
-      `?path=${path}&search=${encodeURIComponent(searchQuery)}`
+      `?path=${encodeURIComponent(path)}&search=${encodeURIComponent(searchQuery)}`
     );
   };
 
