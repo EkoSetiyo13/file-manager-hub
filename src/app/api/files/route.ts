@@ -5,7 +5,7 @@ import levenshtein from "fast-levenshtein"; // Import Levenshtein
 import dotenv from "dotenv";
 dotenv.config();
 
-const ROOT_DIR = path.join(process.env.DIRECTORY_PATH as string);
+const ROOT_DIR = path.join(process.env.DIRECTORY_PATH as string || '');
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
